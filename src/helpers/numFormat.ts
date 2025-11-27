@@ -1,0 +1,1 @@
+export const numFormat = (str?: number): string => `${str || 0}`.split('.')[0]!.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')

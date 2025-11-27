@@ -1,0 +1,1 @@
+export const getStaticStocks = () => import.meta.env.VITE_STATIC_STOCKS
