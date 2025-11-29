@@ -1,0 +1,1 @@
+export const getStaticCrypto = () => import.meta.env.VITE_STATIC_CRYPTO

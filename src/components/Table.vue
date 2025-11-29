@@ -4,9 +4,17 @@ import { storeToRefs } from "pinia";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { numFormat } from "../helpers/numFormat.ts";
 import SummaryRow from "./SummaryRow.vue";
+import LoaderImage from '../assets/Loader.vue'
 
-const { stocks, stocksInfo, usdPrice } = storeToRefs(useStocksStore())
-const { getTStocks, getTStocksInfo, getTETFsInfo, getTCurrenciesInfo, getTStocksUnfoundInfo } = useStocksStore()
+const { stocks, stocksInfo, usdPrice, isLoading } = storeToRefs(useStocksStore())
+const {
+  getTStocks,
+  getTStocksInfo,
+  getTETFsInfo,
+  getTCurrenciesInfo,
+  getTStocksUnfoundInfo,
+  getCryptoPrice
+} = useStocksStore()
 
 const interval = ref()
 
@@ -49,7 +57,7 @@ const updateStocksHandler = async () => {
 
 onMounted(async () => {
   await getTStocks()
-  await Promise.allSettled([getTStocksInfo(), getTETFsInfo(), getTCurrenciesInfo()])
+  await Promise.allSettled([getTStocksInfo(), getTETFsInfo(), getTCurrenciesInfo(), getCryptoPrice()])
 
   interval.value = setInterval(updateStocksHandler, 5000, true)
 })
@@ -60,7 +68,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <table>
+  <table v-show="stocks.length">
+    <div v-if="isLoading" class="loader">
+      <LoaderImage/>
+    </div>
+
     <thead>
     <tr>
       <th>№</th>
@@ -97,7 +109,7 @@ onBeforeUnmount(() => {
 
       <td :class="stock.profit > 0 ? 'green' : stock.profit < 0 ? 'red' : ''">
         <span>{{ numFormat(stock.profit) }}₽</span>
-        <span  v-if="stock.profitPercent !== '0.00'" class="description">{{ stock.profitPercent }}%</span>
+        <span v-if="stock.profitPercent !== '0.00'" class="description">{{ stock.profitPercent }}%</span>
       </td>
 
       <td :class="{green: Number(stock.daily_profit) > 0, red: Number(stock.daily_profit) < 0 }">
@@ -113,10 +125,11 @@ onBeforeUnmount(() => {
 table {
   white-space: nowrap;
   border-collapse: separate;
+  overflow: hidden;
+  position: relative;
   border-spacing: 0;
   border: 1px solid #000;
   border-radius: 8px;
-  overflow: hidden;
   font-weight: 600;
 
   td, th {
@@ -160,6 +173,25 @@ table {
 
     .description {
       color: inherit;
+    }
+  }
+
+  .loader {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    min-width: 60vw;
+    height: 100%;
+    min-height: 40vh;
+    background: rgba(lightgray, 0.7);
+    top: 0;
+    z-index: 1;
+
+    svg {
+      margin-top: 100px;
+      width: 150px;
+      height: 150px;
     }
   }
 }

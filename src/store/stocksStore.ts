@@ -4,21 +4,18 @@ import { getToken } from "../helpers/getToken.ts";
 import type { IStocks, IStocksInfo, IStocksPrices } from "../types.ts";
 import { prepareTData } from "../helpers/prepareTData.ts";
 import { getStaticStocks } from "../helpers/getStaticStocks.ts";
+import { getStaticCrypto } from "../helpers/getStaticCrypto.ts";
+import { initialInfo } from "../const/initialInfo.ts";
 
 const token = getToken()
-const initialData: IStocks[] = JSON.parse(getStaticStocks())
+const initialStocksData: IStocks[] = JSON.parse(getStaticStocks())
+const initialCryptoData: IStocks[] = JSON.parse(getStaticCrypto())
 
 export const useStocksStore = defineStore('stocksStore', () => {
   const isLoading = ref(false)
   const stocks = ref<IStocks[]>([])
-  const stocksShortList = ref(new Set(initialData.map(el => el.ticker.replace('-RM', ''))))
-  const stocksInfo = ref<IStocksInfo[]>([
-    { ticker: 'TECH', name: 'Тинькофф Технологии заблокированные активы' },
-    { ticker: 'TSPX', name: 'Тинькофф США 500 заблокированные активы' },
-    { ticker: 'POLY', name: 'Polymetal' },
-    { ticker: 'SBSP', name: 'ETF Sberbank S&P 500' },
-    { ticker: 'META', name: 'Meta Platforms' },
-  ])
+  const stocksShortList = ref(new Set(initialStocksData.map(el => el.ticker.replace('-RM', ''))))
+  const stocksInfo = ref<IStocksInfo[]>(initialInfo)
   const usdPrice = ref(0)
 
   async function getTStocks() {
@@ -43,7 +40,7 @@ export const useStocksStore = defineStore('stocksStore', () => {
         }) => el.ticker === 'USD000UTSTOM')?.currentPrice
         usdPrice.value = +`${units}.${nano}`
 
-        stocks.value = [...initialData, ...prepareTData(preparedRes, usdPrice.value)]
+        stocks.value = [...initialStocksData, ...initialCryptoData, ...prepareTData(preparedRes, usdPrice.value)]
 
         stocks.value.forEach(el => {
           stocksShortList.value.add(el.ticker)
@@ -52,7 +49,9 @@ export const useStocksStore = defineStore('stocksStore', () => {
     } catch {
       console.log('shit happens')
     } finally {
-      isLoading.value = false
+      setTimeout(() => {
+        isLoading.value = false
+      }, 300)
     }
   }
 
@@ -82,7 +81,9 @@ export const useStocksStore = defineStore('stocksStore', () => {
     } catch {
       console.log('shit happens')
     } finally {
-      isLoading.value = false
+      setTimeout(() => {
+        isLoading.value = false
+      }, 300)
     }
   }
 
@@ -124,7 +125,9 @@ export const useStocksStore = defineStore('stocksStore', () => {
     } catch {
       console.log('shit happens')
     } finally {
-      isLoading.value = false
+      setTimeout(() => {
+        isLoading.value = false
+      }, 300)
     }
   }
 
@@ -154,7 +157,9 @@ export const useStocksStore = defineStore('stocksStore', () => {
     } catch {
       console.log('shit happens')
     } finally {
-      isLoading.value = false
+      setTimeout(() => {
+        isLoading.value = false
+      }, 300)
     }
   }
 
@@ -184,9 +189,45 @@ export const useStocksStore = defineStore('stocksStore', () => {
     } catch {
       console.log('shit happens')
     } finally {
-      isLoading.value = false
+      setTimeout(() => {
+        isLoading.value = false
+      }, 300)
     }
   }
 
-  return { stocks, stocksInfo, usdPrice, getTStocks, getTStocksInfo, getTETFsInfo, getTCurrenciesInfo, getTStocksUnfoundInfo }
+  async function getCryptoPrice() {
+    isLoading.value = true
+
+    try {
+      const params = initialCryptoData.reduce((acc, curr, i) => acc + (i ? ',' : '') + `"${curr.ticker}USDT"`, '')
+      const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbols=[${params}]`)
+
+      if (res.ok) {
+        const preparedRes = await res.json()
+        preparedRes.forEach(({ symbol, price }: { symbol: string, price: string }) => {
+          const getCrypto = stocksInfo.value.find(el => el.ticker === symbol.replace('USDT', ''))
+          if (getCrypto) getCrypto.current_price = Number(price)
+        })
+      }
+    } catch {
+      console.log('shit happens')
+    } finally {
+      setTimeout(() => {
+        isLoading.value = false
+      }, 300)
+    }
+  }
+
+  return {
+    stocks,
+    stocksInfo,
+    usdPrice,
+    isLoading,
+    getTStocks,
+    getTStocksInfo,
+    getTETFsInfo,
+    getTCurrenciesInfo,
+    getTStocksUnfoundInfo,
+    getCryptoPrice
+  }
 })
