@@ -1,0 +1,19 @@
+export const illiquidShares = [
+  'GOOGL',
+  'TSLA',
+  'META',
+  'NFLX',
+  'AAPL',
+  'MSFT',
+  'NVDA',
+  'AMD',
+  'TSPX',
+  'TSPX2',
+  'TECH',
+  'TECH2',
+  'MU',
+  'SBSP',
+  'PFE',
+  'FXWO',
+  'POLY'
+]

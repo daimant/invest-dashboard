@@ -5,6 +5,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { numFormat } from "../helpers/numFormat.ts";
 import SummaryRow from "./SummaryRow.vue";
 import LoaderImage from '../assets/Loader.vue'
+import { illiquidShares } from "../const/illiquidShares.ts";
 
 const { stocks, stocksInfo, usdPrice, isLoading } = storeToRefs(useStocksStore())
 const {
@@ -17,6 +18,7 @@ const {
 } = useStocksStore()
 
 const interval = ref()
+const isShowIlliquid = ref(false)
 
 const preparedStocks = computed(() => stocks.value.map(stock => {
   const findStockInfo = stocksInfo.value.find(el => el.ticker === stock.ticker)
@@ -50,6 +52,7 @@ const preparedStocks = computed(() => stocks.value.map(stock => {
   }
 }))
 const sortedStocks = computed(() => preparedStocks.value.sort((stockA, stockB) => (stockB.current_price ? +stockB.quantity * +stockB.current_price : 0) - (stockA.current_price ? +stockA.quantity * +stockA.current_price : 0)))
+const filteredStocks = computed(() => sortedStocks.value.filter(el => isShowIlliquid.value ? sortedStocks.value : !illiquidShares.includes(el.ticker)))
 
 const updateStocksHandler = async () => {
   await Promise.allSettled([getTStocks(), getTStocksUnfoundInfo])
@@ -76,7 +79,13 @@ onBeforeUnmount(() => {
     <thead>
     <tr>
       <th>№</th>
-      <th>Актив</th>
+      <th>
+        <div class="input-container">
+          <span>Актив</span>
+          <input class='pointer' type="checkbox" id="toggleSwitch" v-model="isShowIlliquid"/>
+          <label class='pointer' for="toggleSwitch">Неликвид</label>
+        </div>
+      </th>
       <th>Количество</th>
       <th>Вложено</th>
       <th>Текущая стоимость</th>
@@ -86,9 +95,12 @@ onBeforeUnmount(() => {
     </thead>
 
     <tbody>
-    <summary-row/>
+    <summary-row :stocks="filteredStocks"/>
 
-    <tr v-for="(stock, i) of sortedStocks" :key="stock.ticker + i" :style="{background: i % 2 ? '#fff' : '#D3D3D340'}">
+    <tr
+      v-for="(stock, i) of filteredStocks" :key="stock.ticker + i"
+      :style="{background: i % 2 ? '#fff' : '#D3D3D340'}"
+    >
       <td>{{ i + 1 }}</td>
 
       <td>
@@ -144,6 +156,23 @@ table {
     }
   }
 
+  .input-container {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+
+    :first-child {
+      margin-right: 16px;
+    }
+  }
+
+  input {
+    margin: 0;
+    height: 16px;
+    width: 16px;
+    border-radius: 4px;
+  }
+
   thead {
     position: sticky;
     top: 0;
@@ -193,6 +222,10 @@ table {
       width: 150px;
       height: 150px;
     }
+  }
+
+  .pointer {
+    cursor: pointer;
   }
 }
 </style>
