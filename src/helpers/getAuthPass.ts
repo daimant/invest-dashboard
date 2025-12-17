@@ -1,1 +1,0 @@
-export const getAuthPass = () => import.meta.env.VITE_PASS

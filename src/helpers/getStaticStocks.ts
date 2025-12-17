@@ -1,1 +1,1 @@
-export const getStaticStocks = () => import.meta.env.VITE_STATIC_STOCKS
+export const getStaticStocks = () => localStorage.STATIC_STOCKS
