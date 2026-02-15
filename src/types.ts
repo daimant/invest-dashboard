@@ -6,10 +6,14 @@ export interface IStocks {
   avg_price: number
   currency?: '$' | '₽'
 
+  isChecked?: boolean
   name?: string
   current_price?: number
   profit?: number
   daily_profit?: number
+  invested?: number
+  value?: number
+  dailyProfitPercent?: string
   profitPercent?: string
 }
 

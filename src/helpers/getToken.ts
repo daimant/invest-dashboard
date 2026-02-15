@@ -1,1 +1,1 @@
-export const getToken = () => localStorage.API_TOKEN
+export const getToken = () => localStorage.API_TOKEN || import.meta.env.VITE_API_TOKEN

@@ -6,6 +6,8 @@ import { numFormat } from "../helpers/numFormat.ts";
 import SummaryRow from "./SummaryRow.vue";
 import LoaderImage from '../assets/Loader.vue'
 import { illiquidShares } from "../const/illiquidShares.ts";
+import type { IStocks } from "../types.ts";
+import SellBlock from "./SellBlock.vue";
 
 const { stocks, stocksInfo, usdPrice, isLoading } = storeToRefs(useStocksStore())
 const {
@@ -19,8 +21,9 @@ const {
 
 const interval = ref()
 const isShowIlliquid = ref(false)
+const checkedItems = ref<string[]>([])
 
-const preparedStocks = computed(() => stocks.value.map(stock => {
+const preparedStocks = computed<IStocks[]>(() => stocks.value.map(stock => {
   const findStockInfo = stocksInfo.value.find(el => el.ticker === stock.ticker)
 
   const invested = stock.quantity * stock.avg_price
@@ -32,6 +35,8 @@ const preparedStocks = computed(() => stocks.value.map(stock => {
 
   const dailyProfitRowPercent = stock.daily_profit ? stock.daily_profit / invested * 100 : 0
   const dailyProfitPercent = (dailyProfitRowPercent).toFixed(dailyProfitRowPercent < 1 && dailyProfitRowPercent * 100 > -1 ? 2 : 0)
+
+  stock.isChecked = checkedItems.value.includes(stock.ticker)
 
   if (!stock.current_price && findStockInfo?.current_price) {
     stock.current_price = findStockInfo.current_price * (stock.currency === '$' ? usdPrice.value : 1)
@@ -54,8 +59,13 @@ const preparedStocks = computed(() => stocks.value.map(stock => {
 const sortedStocks = computed(() => preparedStocks.value.sort((stockA, stockB) => (stockB.current_price ? +stockB.quantity * +stockB.current_price : 0) - (stockA.current_price ? +stockA.quantity * +stockA.current_price : 0)))
 const filteredStocks = computed(() => sortedStocks.value.filter(el => isShowIlliquid.value ? sortedStocks.value : !illiquidShares.includes(el.ticker)))
 
-const updateStocksHandler = async () => {
+async function updateStocksHandler() {
   await Promise.allSettled([getTStocks(), getTStocksUnfoundInfo])
+}
+
+function checkStock(item: IStocks) {
+  if (checkedItems.value.includes(item.ticker)) checkedItems.value = checkedItems.value.filter(el => el !== item.ticker)
+  else checkedItems.value.push(item.ticker)
 }
 
 onMounted(async () => {
@@ -71,6 +81,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <sell-block :filteredStocks :checkedItems/>
+
   <table v-show="stocks.length">
     <div v-if="isLoading" class="loader">
       <LoaderImage/>
@@ -104,8 +116,11 @@ onBeforeUnmount(() => {
       <td>{{ i + 1 }}</td>
 
       <td>
-        <span>{{ stock.name }}</span>
-        <span class="description">{{ stock.ticker }}</span>
+        <div class="pointer" @click="checkStock(stock)">
+          <input class='mr-2' type="checkbox" v-model="stock.isChecked"/>
+          <span>{{ stock.name }}</span>
+          <span class="description">{{ stock.ticker }}</span>
+        </div>
       </td>
 
       <td> {{ stock.quantity }}шт</td>
@@ -119,7 +134,7 @@ onBeforeUnmount(() => {
         <span v-if="stock.current_price" class="description">{{ numFormat(stock.current_price) }}₽</span>
       </td>
 
-      <td :class="stock.profit > 0 ? 'green' : stock.profit < 0 ? 'red' : ''">
+      <td :class="stock.profit! > 0 ? 'green' : stock.profit! < 0 ? 'red' : ''">
         <span>{{ numFormat(stock.profit) }}₽</span>
         <span v-if="stock.profitPercent !== '0.00'" class="description">{{ stock.profitPercent }}%</span>
       </td>
@@ -134,6 +149,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss">
+
 table {
   white-space: nowrap;
   border-collapse: separate;
@@ -227,5 +243,10 @@ table {
   .pointer {
     cursor: pointer;
   }
+
+  .mr-2 {
+    margin-right: 8px;
+  }
 }
+
 </style>
